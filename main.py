@@ -9,8 +9,11 @@ load_dotenv(find_dotenv())
 MYSQL_URL = os.environ['MYSQL_URL']
 
 # rdbms.py
-from sqlalchemy.orm import sessionmaker, scoped_session
+from sys import exc_info
+from contextlib import contextmanager
+
 from sqlalchemy.sql import false
+from sqlalchemy.orm import sessionmaker, scoped_session, Session
 from sqlalchemy import create_engine, DATE, DATETIME, FLOAT, BOOLEAN
 
 engine = create_engine(
@@ -30,12 +33,12 @@ session = scoped_session(
 )
 
 
-def session_scope():
-    from sys import exc_info
-
+@contextmanager
+def session_scope() -> Session:
     try:
         yield session
         session.commit()
+
     except:
         session.rollback()
 
@@ -47,6 +50,7 @@ def session_scope():
                 'traceback': traceback
             }
         )
+
 
 # models.py
 from sqlalchemy.orm import declarative_base
