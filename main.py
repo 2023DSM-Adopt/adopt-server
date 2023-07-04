@@ -1,5 +1,7 @@
 # config.py
 import os
+from fastapi import HTTPException
+
 from dotenv import load_dotenv, find_dotenv
 
 load_dotenv(find_dotenv())
@@ -18,7 +20,33 @@ engine = create_engine(
     max_overflow=20,
     pool_pre_ping=True
 )
-session = sessionmaker(bind=engine, autocommit=False, autoflush=False, expire_on_commit=False)
+session = scoped_session(
+    sessionmaker(
+        bind=engine,
+        autocommit=False,
+        autoflush=False,
+        expire_on_commit=False
+    )
+)
+
+
+def session_scope():
+    from sys import exc_info
+
+    try:
+        yield session
+        session.commit()
+    except:
+        session.rollback()
+
+        typ, cls, traceback = exc_info()
+        raise HTTPException(
+            status_code=500,
+            detail={
+                'exception': typ,
+                'traceback': traceback
+            }
+        )
 
 # models.py
 from sqlalchemy.orm import declarative_base
