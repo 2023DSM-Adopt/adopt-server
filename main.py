@@ -79,8 +79,6 @@ class Adopt(Base):
     start_at = Column(DATE, nullable=False)
 
 
-Base.metadata.create_all(engine)
-
 # cqrs.py
 
 
@@ -91,19 +89,18 @@ Base.metadata.create_all(engine)
 
 
 from fastapi import FastAPI
+from starlette.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=['*'],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 if __name__ == '__main__':
     from uvicorn import run
-    from starlette.middleware.cors import CORSMiddleware
-
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=['*'],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
 
     run(app)
