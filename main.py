@@ -99,10 +99,10 @@ class Animal(Base):
 class Post(Base):
     __tablename__ = 'tbl_post'
     animal_id = Column(INTEGER, ForeignKey('tbl_animal.id'), primary_key=True)
-    post_id = Column(INTEGER, primary_key=True, autoincrement=True)
+    post_id = Column(INTEGER, autoincrement=True)
 
     start_at = Column(DATE, nullable=False)
-    end_At = Column(DATE, nullable=False)
+    end_at = Column(DATE, nullable=False)
 
 
 class Adopt(Base):
@@ -118,8 +118,6 @@ class Adopt(Base):
 
 
 # view.py
-
-
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
