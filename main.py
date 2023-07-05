@@ -1,5 +1,6 @@
 # config.py
 import os
+from uuid import uuid4
 from fastapi import HTTPException
 
 from dotenv import load_dotenv, find_dotenv
@@ -14,7 +15,7 @@ from contextlib import contextmanager
 
 from sqlalchemy.sql import false
 from sqlalchemy.orm import sessionmaker, scoped_session, Session
-from sqlalchemy import create_engine, DATE, DATETIME, FLOAT, BOOLEAN
+from sqlalchemy import create_engine, DATE, DATETIME, FLOAT, BOOLEAN, func
 
 engine = create_engine(
     url=MYSQL_URL,
@@ -41,13 +42,13 @@ def session_scope() -> Session:
 
     except:
         session.rollback()
-
         typ, cls, traceback = exc_info()
+
         raise HTTPException(
             status_code=500,
             detail={
-                'exception': typ,
-                'traceback': traceback
+                'exception': str(typ.__name__),
+                'explain': str(cls),
             }
         )
 
@@ -59,26 +60,23 @@ from sqlalchemy import Column, CHAR, VARCHAR, INTEGER, ForeignKey
 Base = declarative_base()
 
 
-class User(Base):
-    __tablename__ = 'tbl_user'
-    id_ = Column('id', INTEGER, primary_key=True, autoincrement=True)
-    name = Column(VARCHAR(5), nullable=False)
-    phone_num = Column(CHAR(11), nullable=False, unique=True)
-
-
 class Application(Base):
     __tablename__ = 'tbl_application'
-    user_id = Column(INTEGER, ForeignKey('tbl_user.id'), primary_key=True)
+
+    user_name = Column(VARCHAR(5), nullable=False)
+    user_phone_num = Column(CHAR(11), nullable=False, primary_key=True)
     animal_id = Column(INTEGER, ForeignKey('tbl_animal.id'), primary_key=True)
     title = Column(VARCHAR(255), nullable=False)
     content = Column(VARCHAR(255), nullable=False)
     meet_at = Column(DATETIME, nullable=False)
+    create_at = Column(DATE, nullable=False)
 
 
 class Animal(Base):
     __tablename__ = 'tbl_animal'
     id_ = Column('id', INTEGER, primary_key=True, autoincrement=True)
 
+    sex = Column(CHAR(1), nullable=False)
     weight = Column(FLOAT, nullable=False)
     breeds = Column(VARCHAR(255), nullable=False)
     animal_kind = Column(VARCHAR(255), nullable=False)
@@ -93,13 +91,13 @@ class Animal(Base):
     town = Column(VARCHAR(255), nullable=False)
     introduce = Column(VARCHAR(255), nullable=False)
 
-    status = Column(VARCHAR(10), nullable=False)
+    status = Column(VARCHAR(10), nullable=False, default='대기중', server_default='대기중')
 
 
 class Post(Base):
     __tablename__ = 'tbl_post'
     animal_id = Column(INTEGER, ForeignKey('tbl_animal.id'), primary_key=True)
-    post_id = Column(INTEGER, autoincrement=True)
+    post_id = Column(CHAR(36), autoincrement=True, nullable=False, default=uuid4)
 
     start_at = Column(DATE, nullable=False)
     end_at = Column(DATE, nullable=False)
@@ -111,17 +109,23 @@ class Adopt(Base):
     start_at = Column(DATE, nullable=False)
 
 
-# cqrs.py
 
-
-# service.py
-
-
-# view.py
+# settings.py
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
+from user import include_user_router
+from admin import include_admin_router
+from images import include_image_router
+from animals import include_animal_router
+
 app = FastAPI()
+
+include_user_router(app)
+include_admin_router(app)
+include_animal_router(app)
+include_image_router(app)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=['*'],
@@ -129,8 +133,3 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-if __name__ == '__main__':
-    from uvicorn import run
-
-    run(app)
